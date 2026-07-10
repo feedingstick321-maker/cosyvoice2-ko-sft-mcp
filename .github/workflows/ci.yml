@@ -15,13 +15,9 @@ jobs:
         with:
           submodules: recursive
       - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: "3.10"
-      - name: Install test dependencies
-        run: uv pip install --system --editable . pytest ruff
       - name: Ruff
-        run: ruff check src tests scripts/convert_checkpoint.py scripts/validate_release.py scripts/smoke_inference.py
+        run: uv run --python 3.10 --with pytest --with ruff ruff check src tests scripts/convert_checkpoint.py scripts/validate_release.py scripts/smoke_inference.py
       - name: Tests
-        run: pytest -q
+        run: uv run --python 3.10 --with pytest pytest -q
       - name: Release guard
-        run: python scripts/validate_release.py
+        run: uv run --python 3.10 python scripts/validate_release.py
