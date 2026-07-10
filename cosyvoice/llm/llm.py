@@ -224,9 +224,11 @@ class TransformerLM(torch.nn.Module):
 
 
 class Qwen2Encoder(torch.nn.Module):
-    def __init__(self, pretrain_path):
+    def __init__(self, pretrain_path, enable_gradient_checkpointing=False):
         super().__init__()
         self.model = Qwen2ForCausalLM.from_pretrained(pretrain_path)
+        if enable_gradient_checkpointing:
+            self.model.gradient_checkpointing_enable()
 
     def forward(self, xs: torch.Tensor, xs_lens: torch.Tensor):
         T = xs.size(1)

@@ -1,275 +1,139 @@
-![SVG Banners](https://svg-banners.vercel.app/api?type=origin&text1=CosyVoice🤠&text2=Text-to-Speech%20💖%20Large%20Language%20Model&width=800&height=210)
+# CosyVoice2 Korean SFT + Local MCP
 
-## 👉🏻 CosyVoice 👈🏻
+![Project thumbnail](asset/cosyvoice2-ko-sft-mcp-thumbnail.png)
 
-**Fun-CosyVoice 3.0**: [Demos](https://funaudiollm.github.io/cosyvoice3/); [Paper](https://arxiv.org/pdf/2505.17589); [Modelscope](https://www.modelscope.cn/models/FunAudioLLM/Fun-CosyVoice3-0.5B-2512); [Huggingface](https://huggingface.co/FunAudioLLM/Fun-CosyVoice3-0.5B-2512); [CV3-Eval](https://github.com/FunAudioLLM/CV3-Eval)
+한국어 억양과 발화 스타일을 강화한 CosyVoice2 community SFT 모델을 Claude와
+Codex에서 직접 호출할 수 있게 만든 로컬 MCP 배포판입니다. 음성 합성은 사용자의
+PC에서 실행되며 중앙 추론 서버를 사용하지 않습니다.
 
-**CosyVoice 2.0**: [Demos](https://funaudiollm.github.io/cosyvoice2/); [Paper](https://arxiv.org/pdf/2412.10117); [Modelscope](https://www.modelscope.cn/models/iic/CosyVoice2-0.5B); [HuggingFace](https://huggingface.co/FunAudioLLM/CosyVoice2-0.5B)
+> Community project. Not an official FunAudioLLM, Alibaba, NIA, Anthropic, or OpenAI release.
 
-**CosyVoice 1.0**: [Demos](https://fun-audio-llm.github.io); [Paper](https://funaudiollm.github.io/pdf/CosyVoice_v1.pdf); [Modelscope](https://www.modelscope.cn/models/iic/CosyVoice-300M); [HuggingFace](https://huggingface.co/FunAudioLLM/CosyVoice-300M)
+## Why Local
 
-## Highlight🔥
+- **Privacy by default**: 합성 문장과 reference audio를 외부 TTS API로 전송하지 않습니다.
+- **Korean prosody**: 한국어 감정·발화 스타일 데이터로 SFT한 Epoch 3 LLM 가중치를 사용합니다.
+- **Accessible hardware**: 0.5B급 LLM 코어 기반으로 12GB VRAM급 GPU를 목표로 합니다.
+  RTX 3060 12GB에서 사용할 수 있고 RTX 5060 Ti 16GB에서는 더 여유 있게 동작합니다.
+- **Unlimited local retries**: 모델을 한 번 내려받으면 호출당 과금이나 API rate limit 없이
+  결과가 마음에 들 때까지 로컬에서 다시 생성할 수 있습니다.
+- **Agent-ready**: Claude Code, Claude Desktop, Codex가 공통 MCP 도구로 음성을 생성합니다.
+- **Offline after setup**: 모델 cache가 준비되면 `HF_HUB_OFFLINE=1`로 추론할 수 있습니다.
 
-**Fun-CosyVoice 3.0** is an advanced text-to-speech (TTS) system based on large language models (LLM), surpassing its predecessor (CosyVoice 2.0) in content consistency, speaker similarity, and prosody naturalness. It is designed for zero-shot multilingual speech synthesis in the wild.
-### Key Features
-- **Language Coverage**: Covers 9 common languages (Chinese, English, Japanese, Korean, German, Spanish, French, Italian, Russian), 18+ Chinese dialects/accents (Guangdong, Minnan, Sichuan, Dongbei, Shan3xi, Shan1xi, Shanghai, Tianjin, Shandong, Ningxia, Gansu, etc.) and meanwhile supports both multi-lingual/cross-lingual zero-shot voice cloning.
-- **Content Consistency & Naturalness**: Achieves state-of-the-art performance in content consistency, speaker similarity, and prosody naturalness.
-- **Pronunciation Inpainting**: Supports pronunciation inpainting of Chinese Pinyin and English CMU phonemes, providing more controllability and thus suitable for production use.
-- **Text Normalization**: Supports reading of numbers, special symbols and various text formats without a traditional frontend module.
-- **Bi-Streaming**: Support both text-in streaming and audio-out streaming, and achieves latency as low as 150ms while maintaining high-quality audio output.
-- **Instruct Support**: Supports various instructions such as languages, dialects, emotions, speed, volume, etc.
+여기서 0.5B는 CosyVoice2의 언어모델 코어 규모를 뜻합니다. 전체 TTS 구성에는 flow,
+vocoder, tokenizer 및 ONNX 구성요소가 추가로 포함됩니다.
 
+## Verified Hardware
 
-## Roadmap
+| GPU | Runtime | Result |
+|---|---|---|
+| RTX 5060 Ti 16GB | PyTorch 2.8.0, CUDA 12.8, FP16 | 7.04s WAV, RTF 1.31, peak allocated 3.38GiB, peak reserved 4.06GiB |
+| RTX 3090 24GB | PyTorch 2.3.1, CUDA 12.1 | 7.76s WAV, RTF 1.07 |
+| RTX 3060 12GB | Same 12GB-class local target | Supported with substantial memory headroom from the 5060 Ti measurement |
 
-- [x] 2025/12
+The RTX 3060 line is a supported hardware target based on the measured inference peak; exact RTF
+depends on driver and PyTorch build. The installer defaults to PyTorch 2.8/CUDA 12.8 so both Ampere
+and Blackwell GPUs are covered.
 
-    - [x] release Fun-CosyVoice3-0.5B-2512 base model, rl model and its training/inference script
-    - [x] release Fun-CosyVoice3-0.5B modelscope gradio space
+## Release Layout
 
-- [x] 2025/08
+- Source and MCP: this GitHub repository
+- Fine-tuned LLM weights: `feedingstick321-maker/CosyVoice2-KO-SFT-v6-epoch3`
+- Base components: `FunAudioLLM/CosyVoice2-0.5B`
+- Selected checkpoint: SFT v6 Epoch 3
 
-    - [x] Thanks to the contribution from NVIDIA Yuekai Zhang, add triton trtllm runtime support and cosyvoice2 grpo training support
+The installer downloads the pinned base model and overlays only the Korean fine-tuned LLM.
+The AI Hub training corpus, derived parquet files, embeddings, tokens, and production audio are
+not distributed.
 
-- [x] 2025/07
+## Quick Start on Windows
 
-    - [x] release Fun-CosyVoice 3.0 eval set
+Requirements: NVIDIA GPU with at least 12GB VRAM, current NVIDIA driver, Git, and `uv`.
 
-- [x] 2025/05
-
-    - [x] add CosyVoice2-0.5B vllm support
-
-- [x] 2024/12
-
-    - [x] 25hz CosyVoice2-0.5B released
-
-- [x] 2024/09
-
-    - [x] 25hz CosyVoice-300M base model
-    - [x] 25hz CosyVoice-300M voice conversion function
-
-- [x] 2024/08
-
-    - [x] Repetition Aware Sampling(RAS) inference for llm stability
-    - [x] Streaming inference mode support, including kv cache and sdpa for rtf optimization
-
-- [x] 2024/07
-
-    - [x] Flow matching training support
-    - [x] WeTextProcessing support when ttsfrd is not available
-    - [x] Fastapi server and client
-
-## Evaluation
-
-| Model | Open-Source | Model Size | test-zh<br>CER (%) ↓ | test-zh<br>SS (%) ↑ | test-en<br>WER (%) ↓ | test-en<br>SS (%) ↑ | test-hard<br>CER (%) ↓ | test-hard<br>SS (%) ↑ |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Human | - | - | 1.26 | 75.5 | 2.14 | 73.4 | - | - |
-| Seed-TTS | ❌ | - | 1.12 | 79.6 | 2.25 | 76.2 | 7.59 | 77.6 |
-| MiniMax-Speech | ❌ | - | 0.83 | 78.3 | 1.65 | 69.2 | - | - |
-| F5-TTS | ✅ | 0.3B | 1.52 | 74.1 | 2.00 | 64.7 | 8.67 | 71.3 |
-| Spark TTS | ✅ | 0.5B | 1.2 | 66.0 | 1.98 | 57.3 | - | - |
-| CosyVoice2 | ✅ | 0.5B | 1.45 | 75.7 | 2.57 | 65.9 | 6.83 | 72.4 |
-| FireRedTTS2 | ✅ | 1.5B | 1.14 | 73.2 | 1.95 | 66.5 | - | - |
-| Index-TTS2 | ✅ | 1.5B | 1.03 | 76.5 | 2.23 | 70.6 | 7.12 | 75.5 |
-| VibeVoice-1.5B | ✅ | 1.5B | 1.16 | 74.4 | 3.04 | 68.9 | - | - |
-| VibeVoice-Realtime | ✅ | 0.5B | - | - | 2.05 | 63.3 | - | - |
-| HiggsAudio-v2 | ✅ | 3B | 1.50 | 74.0 | 2.44 | 67.7 | - | - |
-| VoxCPM | ✅ | 0.5B | 0.93 | 77.2 | 1.85 | 72.9 | 8.87 | 73.0 |
-| GLM-TTS | ✅ | 1.5B | 1.03 | 76.1 | - | - | - | - |
-| GLM-TTS RL | ✅ | 1.5B | 0.89 | 76.4 | - | - | - | - |
-| Fun-CosyVoice3-0.5B-2512 | ✅ | 0.5B | 1.21 | 78.0 | 2.24 | 71.8 | 6.71 | 75.8 |
-| Fun-CosyVoice3-0.5B-2512_RL | ✅ | 0.5B | 0.81 | 77.4 | 1.68 | 69.5 | 5.44 | 75.0 |
-
-
-## Install
-
-### Clone and install
-
-- Clone the repo
-    ``` sh
-    git clone --recursive https://github.com/FunAudioLLM/CosyVoice.git
-    # If you failed to clone the submodule due to network failures, please run the following command until success
-    cd CosyVoice
-    git submodule update --init --recursive
-    ```
-
-- Install Conda: please see https://docs.conda.io/en/latest/miniconda.html
-- Create Conda env:
-
-    ``` sh
-    conda create -n cosyvoice -y python=3.10
-    conda activate cosyvoice
-    pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
-
-    # If you encounter sox compatibility issues
-    # ubuntu
-    sudo apt-get install sox libsox-dev
-    # centos
-    sudo yum install sox sox-devel
-    ```
-
-### Model download
-
-We strongly recommend that you download our pretrained `Fun-CosyVoice3-0.5B` `CosyVoice2-0.5B` `CosyVoice-300M` `CosyVoice-300M-SFT` `CosyVoice-300M-Instruct` model and `CosyVoice-ttsfrd` resource.
-
-``` python
-# modelscope SDK model download
-from modelscope import snapshot_download
-snapshot_download('FunAudioLLM/Fun-CosyVoice3-0.5B-2512', local_dir='pretrained_models/Fun-CosyVoice3-0.5B')
-snapshot_download('iic/CosyVoice2-0.5B', local_dir='pretrained_models/CosyVoice2-0.5B')
-snapshot_download('iic/CosyVoice-300M', local_dir='pretrained_models/CosyVoice-300M')
-snapshot_download('iic/CosyVoice-300M-SFT', local_dir='pretrained_models/CosyVoice-300M-SFT')
-snapshot_download('iic/CosyVoice-300M-Instruct', local_dir='pretrained_models/CosyVoice-300M-Instruct')
-snapshot_download('iic/CosyVoice-ttsfrd', local_dir='pretrained_models/CosyVoice-ttsfrd')
-
-# for oversea users, huggingface SDK model download
-from huggingface_hub import snapshot_download
-snapshot_download('FunAudioLLM/Fun-CosyVoice3-0.5B-2512', local_dir='pretrained_models/Fun-CosyVoice3-0.5B')
-snapshot_download('FunAudioLLM/CosyVoice2-0.5B', local_dir='pretrained_models/CosyVoice2-0.5B')
-snapshot_download('FunAudioLLM/CosyVoice-300M', local_dir='pretrained_models/CosyVoice-300M')
-snapshot_download('FunAudioLLM/CosyVoice-300M-SFT', local_dir='pretrained_models/CosyVoice-300M-SFT')
-snapshot_download('FunAudioLLM/CosyVoice-300M-Instruct', local_dir='pretrained_models/CosyVoice-300M-Instruct')
-snapshot_download('FunAudioLLM/CosyVoice-ttsfrd', local_dir='pretrained_models/CosyVoice-ttsfrd')
+```powershell
+git clone --recursive https://github.com/feedingstick321-maker/cosyvoice2-ko-sft-mcp.git
+cd cosyvoice2-ko-sft-mcp
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
+.\.venv\Scripts\cosyvoice-ko-prepare.exe
 ```
 
-Optionally, you can unzip `ttsfrd` resource and install `ttsfrd` package for better text normalization performance.
+The default model cache is `%LOCALAPPDATA%\CosyVoice2-KO-MCP`.
 
-Notice that this step is not necessary. If you do not install `ttsfrd` package, we will use wetext by default.
+## Attach to Codex
 
-``` sh
-cd pretrained_models/CosyVoice-ttsfrd/
-unzip resource.zip -d .
-pip install ttsfrd_dependency-0.1-py3-none-any.whl
-pip install ttsfrd-0.4.2-cp310-cp310-linux_x86_64.whl
+```powershell
+codex mcp add cosyvoice-ko -- `
+  "$PWD\.venv\Scripts\cosyvoice-ko-mcp.exe"
 ```
 
-### Basic Usage
+Equivalent `~/.codex/config.toml`:
 
-We strongly recommend using `Fun-CosyVoice3-0.5B` for better performance.
-Follow the code in `example.py` for detailed usage of each model.
-```sh
-python example.py
+```toml
+[mcp_servers.cosyvoice_ko]
+command = "C:\\path\\to\\cosyvoice2-ko-sft-mcp\\.venv\\Scripts\\cosyvoice-ko-mcp.exe"
+startup_timeout_sec = 120
 ```
 
-#### vLLM Usage
-CosyVoice2/3 now supports **vLLM 0.11.x+ (V1 engine)** and **vLLM 0.9.0 (legacy)**.
-Older vllm version(<0.9.0) do not support CosyVoice inference, and versions in between (e.g., 0.10.x) are not tested.
+## Attach to Claude Code
 
-Notice that `vllm` has a lot of specific requirements. You can create a new env to in case your hardward do not support vllm and old env is corrupted.
-
-``` sh
-conda create -n cosyvoice_vllm --clone cosyvoice
-conda activate cosyvoice_vllm
-# for vllm==0.9.0
-pip install vllm==v0.9.0 transformers==4.51.3 numpy==1.26.4 -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
-# for vllm>=0.11.0
-pip install vllm==v0.11.0 transformers==4.57.1 numpy==1.26.4 -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
-python vllm_example.py
+```powershell
+claude mcp add --transport stdio --scope user cosyvoice-ko -- `
+  "$PWD\.venv\Scripts\cosyvoice-ko-mcp.exe"
 ```
 
-#### Start web demo
+For Claude Desktop, use the same executable as a `stdio` MCP server in
+`claude_desktop_config.json`.
 
-You can use our web demo page to get familiar with CosyVoice quickly.
+## MCP Tools
 
-Please see the demo website for details.
+| Tool | Purpose |
+|---|---|
+| `model_status` | Check model cache, GPU, CUDA, VRAM, and revisions |
+| `prepare_model` | Download and verify the pinned base and Korean weights |
+| `register_voice` | Store a user-owned reference voice locally |
+| `list_voices` | List local voice profiles |
+| `synthesize` | Generate a WAV from a registered local voice |
+| `synthesize_zero_shot` | Generate a WAV from one reference audio file |
+| `remove_voice` | Remove one local voice profile |
 
-``` python
-# change iic/CosyVoice-300M-SFT for sft inference, or iic/CosyVoice-300M-Instruct for instruct inference
-python3 webui.py --port 50000 --model_dir pretrained_models/CosyVoice-300M
+Example agent request:
+
+```text
+cosyvoice-ko의 teacher 음성으로 다음 문장을 합성하고 WAV 경로를 알려줘:
+"오늘 회의는 오후 세 시에 시작합니다."
 ```
 
-#### Advanced Usage
+## Training Recipe
 
-For advanced users, we have provided training and inference scripts in `examples/libritts`.
+The public Korean recipe is in
+`examples/ko_sft/conf/cosyvoice2_ko_sft.yaml`. It keeps the upstream
+LibriTTS recipe unchanged and makes the low-memory controls explicit:
 
-#### Build for deployment
+- gradient checkpointing enabled only by the Korean training recipe
+- dynamic batch limit configurable through `max_batch_size`
+- gradient accumulation 32
+- BF16 autocast
+- single-GPU and multi-GPU DDP paths
 
-Optionally, if you want service deployment,
-You can run the following steps.
+See `examples/ko_sft/run_ko_sft.sh` for environment variables and launch syntax.
 
-``` sh
-cd runtime/python
-docker build -t cosyvoice:v1.0 .
-# change iic/CosyVoice-300M to iic/CosyVoice-300M-Instruct if you want to use instruct inference
-# for grpc usage
-docker run -d --runtime=nvidia -p 50000:50000 cosyvoice:v1.0 /bin/bash -c "cd /opt/CosyVoice/CosyVoice/runtime/python/grpc && python3 server.py --port 50000 --max_conc 4 --model_dir iic/CosyVoice-300M && sleep infinity"
-cd grpc && python3 client.py --port 50000 --mode <sft|zero_shot|cross_lingual|instruct>
-# for fastapi usage
-docker run -d --runtime=nvidia -p 50000:50000 cosyvoice:v1.0 /bin/bash -c "cd /opt/CosyVoice/CosyVoice/runtime/python/fastapi && python3 server.py --port 50000 --model_dir iic/CosyVoice-300M && sleep infinity"
-cd fastapi && python3 client.py --port 50000 --mode <sft|zero_shot|cross_lingual|instruct>
-```
+## Model and Data Notice
 
-#### Using Nvidia TensorRT-LLM for deployment
+Base code and model: FunAudioLLM/CosyVoice and CosyVoice2-0.5B, Apache-2.0.
 
-Using TensorRT-LLM to accelerate cosyvoice2 llm could give 4x acceleration comparing with huggingface transformers implementation.
-To quick start:
+Korean training data attribution:
 
-``` sh
-cd runtime/triton_trtllm
-docker compose up -d
-```
-For more details, you could check [here](https://github.com/FunAudioLLM/CosyVoice/tree/main/runtime/triton_trtllm)
+> 본 모델은 과학기술정보통신부의 재원으로 한국지능정보사회진흥원의 지원을 받아
+> 구축된 AI Hub의 '감성 및 발화 스타일별 음성합성 데이터'를 활용하여 학습되었습니다.
 
-## Discussion & Communication
+The dataset itself is not included. Users are responsible for having rights to any reference voice
+they register and for complying with applicable law when generating or distributing audio.
 
-You can directly discuss on [Github Issues](https://github.com/FunAudioLLM/CosyVoice/issues).
+## Security
 
-You can also scan the QR code to join our official Dingding chat group.
+- No telemetry and no hosted inference endpoint.
+- Reference audio stays in the local voice store.
+- Remote audio URLs are not accepted by MCP tools.
+- Output paths are confined to the configured local output directory by default.
+- Model files are pinned and verified with SHA-256.
 
-<img src="./asset/dingding.png" width="250px">
-
-## Acknowledge
-
-1. We borrowed a lot of code from [FunASR](https://github.com/modelscope/FunASR).
-2. We borrowed a lot of code from [FunCodec](https://github.com/modelscope/FunCodec).
-3. We borrowed a lot of code from [Matcha-TTS](https://github.com/shivammehta25/Matcha-TTS).
-4. We borrowed a lot of code from [AcademiCodec](https://github.com/yangdongchao/AcademiCodec).
-5. We borrowed a lot of code from [WeNet](https://github.com/wenet-e2e/wenet).
-
-## Citations
-
-``` bibtex
-@article{du2024cosyvoice,
-  title={Cosyvoice: A scalable multilingual zero-shot text-to-speech synthesizer based on supervised semantic tokens},
-  author={Du, Zhihao and Chen, Qian and Zhang, Shiliang and Hu, Kai and Lu, Heng and Yang, Yexin and Hu, Hangrui and Zheng, Siqi and Gu, Yue and Ma, Ziyang and others},
-  journal={arXiv preprint arXiv:2407.05407},
-  year={2024}
-}
-
-@article{du2024cosyvoice,
-  title={Cosyvoice 2: Scalable streaming speech synthesis with large language models},
-  author={Du, Zhihao and Wang, Yuxuan and Chen, Qian and Shi, Xian and Lv, Xiang and Zhao, Tianyu and Gao, Zhifu and Yang, Yexin and Gao, Changfeng and Wang, Hui and others},
-  journal={arXiv preprint arXiv:2412.10117},
-  year={2024}
-}
-
-@article{du2025cosyvoice,
-  title={CosyVoice 3: Towards In-the-wild Speech Generation via Scaling-up and Post-training},
-  author={Du, Zhihao and Gao, Changfeng and Wang, Yuxuan and Yu, Fan and Zhao, Tianyu and Wang, Hao and Lv, Xiang and Wang, Hui and Shi, Xian and An, Keyu and others},
-  journal={arXiv preprint arXiv:2505.17589},
-  year={2025}
-}
-
-@inproceedings{lyu2025build,
-  title={Build LLM-Based Zero-Shot Streaming TTS System with Cosyvoice},
-  author={Lyu, Xiang and Wang, Yuxuan and Zhao, Tianyu and Wang, Hao and Liu, Huadai and Du, Zhihao},
-  booktitle={ICASSP 2025-2025 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
-  pages={1--2},
-  year={2025},
-  organization={IEEE}
-}
-```
-
-## Ecosystem
-
-CosyVoice is part of the **FunAudioLLM** family — a complete speech AI toolkit:
-
-| Project | Description | Stars |
-|---------|-------------|-------|
-| [FunASR](https://github.com/modelscope/FunASR) | Industrial speech recognition — 50+ languages, speaker diarization, streaming | [![](https://img.shields.io/github/stars/modelscope/FunASR?style=social)](https://github.com/modelscope/FunASR) |
-| [Fun-ASR-Nano](https://github.com/FunAudioLLM/Fun-ASR) | End-to-end LLM-based ASR — 31 languages, hotwords, vLLM streaming | [![](https://img.shields.io/github/stars/FunAudioLLM/Fun-ASR?style=social)](https://github.com/FunAudioLLM/Fun-ASR) |
-| [SenseVoice](https://github.com/FunAudioLLM/SenseVoice) | Ultra-fast ASR + emotion + audio event detection | [![](https://img.shields.io/github/stars/FunAudioLLM/SenseVoice?style=social)](https://github.com/FunAudioLLM/SenseVoice) |
-| [FunClip](https://github.com/modelscope/FunClip) | AI video clipping powered by speech recognition | [![](https://img.shields.io/github/stars/modelscope/FunClip?style=social)](https://github.com/modelscope/FunClip) |
-
-## Disclaimer
-The content provided above is for academic purposes only and is intended to demonstrate technical capabilities. Some examples are sourced from the internet. If any content infringes on your rights, please contact us to request its removal.
+See [README_UPSTREAM.md](README_UPSTREAM.md) for the original CosyVoice documentation.

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cosyvoice2-ko-sft-mcp"
+version = "0.1.0"
+description = "Local Korean CosyVoice2 SFT inference exposed through MCP"
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+license = { text = "Apache-2.0" }
+dependencies = [
+  "huggingface-hub>=0.27,<2",
+  "mcp>=1.27,<2",
+  "platformdirs>=4.2,<5",
+  "pydantic>=2.7,<3",
+  "safetensors>=0.5,<1",
+  "soundfile>=0.12,<1",
+]
+
+[project.scripts]
+cosyvoice-ko-mcp = "cosyvoice_ko_mcp.server:main"
+cosyvoice-ko-prepare = "cosyvoice_ko_mcp.prepare:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

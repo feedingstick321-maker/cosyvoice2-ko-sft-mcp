@@ -1,0 +1,12 @@
+CosyVoice2 Korean SFT MCP
+Copyright 2026 feedingstick321-maker
+
+This distribution is based on FunAudioLLM/CosyVoice, licensed under the
+Apache License, Version 2.0. Modified files retain their original notices.
+
+The Korean SFT checkpoint was trained using AI Hub's
+"감성 및 발화 스타일별 음성합성 데이터". The training dataset itself is
+not redistributed by this project.
+
+This is a community project and is not an official FunAudioLLM, Alibaba,
+NIA, Anthropic, or OpenAI release.

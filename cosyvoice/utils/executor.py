@@ -48,7 +48,7 @@ class Executor:
         model.train()
         if self.ref_model is not None:
             self.ref_model.eval()
-        model_context = model.join if info_dict['train_engine'] == 'torch_ddp' else nullcontext
+        model_context = model.join if (info_dict['train_engine'] == 'torch_ddp' and hasattr(model, 'join')) else nullcontext
         with model_context():
             for batch_idx, batch_dict in enumerate(train_data_loader):
                 info_dict["tag"] = "TRAIN"
@@ -61,7 +61,7 @@ class Executor:
                 # Disable gradient synchronizations across DDP processes.
                 # Within this context, gradients will be accumulated on module
                 # variables, which will later be synchronized.
-                if info_dict['train_engine'] == 'torch_ddp' and (batch_idx + 1) % info_dict["accum_grad"] != 0:
+                if info_dict['train_engine'] == 'torch_ddp' and hasattr(model, 'no_sync') and (batch_idx + 1) % info_dict["accum_grad"] != 0:
                     context = model.no_sync
                 # Used for single gpu training and DDP gradient synchronization
                 # processes.
@@ -77,12 +77,14 @@ class Executor:
                 # NOTE specify save_per_step in cosyvoice.yaml if you want to enable step save
                 if info_dict['save_per_step'] > 0 and (self.step + 1) % info_dict['save_per_step'] == 0 and \
                    (batch_idx + 1) % info_dict["accum_grad"] == 0:
-                    dist.barrier()
+                    if dist.is_available() and dist.is_initialized():
+                        dist.barrier()
                     self.cv(model, cv_data_loader, writer, info_dict, on_batch_end=False)
                     model.train()
                 if (batch_idx + 1) % info_dict["accum_grad"] == 0:
                     self.step += 1
-        dist.barrier()
+        if dist.is_available() and dist.is_initialized():
+            dist.barrier()
         self.cv(model, cv_data_loader, writer, info_dict, on_batch_end=True)
 
     def train_one_epoc_gan(self, model, optimizer, scheduler, optimizer_d, scheduler_d, train_data_loader, cv_data_loader,
@@ -98,7 +100,7 @@ class Executor:
         # torch.nn.parallel.DistributedDataParallel to be able to train
         # with uneven inputs across participating processes.
         model.train()
-        model_context = model.join if info_dict['train_engine'] == 'torch_ddp' else nullcontext
+        model_context = model.join if (info_dict['train_engine'] == 'torch_ddp' and hasattr(model, 'join')) else nullcontext
         with model_context():
             for batch_idx, batch_dict in enumerate(train_data_loader):
                 info_dict["tag"] = "TRAIN"
@@ -111,7 +113,7 @@ class Executor:
                 # Disable gradient synchronizations across DDP processes.
                 # Within this context, gradients will be accumulated on module
                 # variables, which will later be synchronized.
-                if info_dict['train_engine'] == 'torch_ddp' and (batch_idx + 1) % info_dict["accum_grad"] != 0:
+                if info_dict['train_engine'] == 'torch_ddp' and hasattr(model, 'no_sync') and (batch_idx + 1) % info_dict["accum_grad"] != 0:
                     context = model.no_sync
                 # Used for single gpu training and DDP gradient synchronization
                 # processes.
@@ -135,12 +137,14 @@ class Executor:
                 # NOTE specify save_per_step in cosyvoice.yaml if you want to enable step save
                 if info_dict['save_per_step'] > 0 and (self.step + 1) % info_dict['save_per_step'] == 0 and \
                    (batch_idx + 1) % info_dict["accum_grad"] == 0:
-                    dist.barrier()
+                    if dist.is_available() and dist.is_initialized():
+                        dist.barrier()
                     self.cv(model, cv_data_loader, writer, info_dict, on_batch_end=False)
                     model.train()
                 if (batch_idx + 1) % info_dict["accum_grad"] == 0:
                     self.step += 1
-        dist.barrier()
+        if dist.is_available() and dist.is_initialized():
+            dist.barrier()
         self.cv(model, cv_data_loader, writer, info_dict, on_batch_end=True)
 
     @torch.inference_mode()

@@ -26,6 +26,18 @@ from cosyvoice.utils.file_utils import convert_onnx_to_trt, export_cosyvoice2_vl
 from cosyvoice.utils.common import TrtContextWrapper
 
 
+def _load_state_dict(model_path, device):
+    if model_path.endswith('.safetensors'):
+        try:
+            from safetensors.torch import load_file
+        except ImportError as exc:
+            raise RuntimeError(
+                'Loading .safetensors weights requires the safetensors package.'
+            ) from exc
+        return load_file(model_path, device=str(device))
+    return torch.load(model_path, map_location=device, weights_only=True)
+
+
 class CosyVoiceModel:
 
     def __init__(self,
@@ -63,7 +75,7 @@ class CosyVoiceModel:
         self.silent_tokens = []
 
     def load(self, llm_model, flow_model, hift_model):
-        self.llm.load_state_dict(torch.load(llm_model, map_location=self.device, weights_only=True), strict=True)
+        self.llm.load_state_dict(_load_state_dict(llm_model, self.device), strict=True)
         self.llm.to(self.device).eval()
         self.flow.load_state_dict(torch.load(flow_model, map_location=self.device, weights_only=True), strict=True)
         self.flow.to(self.device).eval()

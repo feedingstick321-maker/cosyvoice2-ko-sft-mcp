@@ -21,7 +21,10 @@ from copy import deepcopy
 import os
 import torch
 import torch.distributed as dist
-import deepspeed
+try:
+    import deepspeed
+except ImportError:
+    deepspeed = None
 
 from hyperpyyaml import load_hyperpyyaml
 
@@ -89,7 +92,8 @@ def get_args():
                         default=60,
                         type=int,
                         help='timeout (in seconds) of cosyvoice_join.')
-    parser = deepspeed.add_config_arguments(parser)
+    if deepspeed is not None:
+        parser = deepspeed.add_config_arguments(parser)
     args = parser.parse_args()
     return args
 
@@ -97,7 +101,13 @@ def get_args():
 @record
 def main():
     args = get_args()
-    os.environ['onnx_path'] = args.onnx_path
+    if args.train_engine == 'deepspeed' and deepspeed is None:
+        raise RuntimeError(
+            'train_engine=deepspeed requires the optional deepspeed package. '
+            'Install the training dependencies or use --train_engine torch_ddp.'
+        )
+    if args.onnx_path:
+        os.environ['onnx_path'] = args.onnx_path
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s')
     # gan train has some special initialization logic
@@ -134,7 +144,7 @@ def main():
     start_step, start_epoch = 0, -1
     if args.checkpoint is not None:
         if os.path.exists(args.checkpoint):
-            state_dict = torch.load(args.checkpoint, map_location='cpu')
+            state_dict = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
             model.load_state_dict(state_dict, strict=False)
             if 'step' in state_dict:
                 start_step = state_dict['step']

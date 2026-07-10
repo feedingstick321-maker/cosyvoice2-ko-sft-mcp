@@ -24,6 +24,13 @@ from cosyvoice.utils.file_utils import logging
 from cosyvoice.utils.class_utils import get_model_type
 
 
+def _weight_path(model_dir, stem):
+    safetensors_path = os.path.join(model_dir, '{}.safetensors'.format(stem))
+    if os.path.exists(safetensors_path):
+        return safetensors_path
+    return os.path.join(model_dir, '{}.pt'.format(stem))
+
+
 class CosyVoice:
 
     def __init__(self, model_dir, load_jit=False, load_trt=False, fp16=False, trt_concurrent=1):
@@ -48,7 +55,7 @@ class CosyVoice:
             load_jit, load_trt, fp16 = False, False, False
             logging.warning('no cuda device, set load_jit/load_trt/fp16 to False')
         self.model = CosyVoiceModel(configs['llm'], configs['flow'], configs['hift'], fp16)
-        self.model.load('{}/llm.pt'.format(model_dir),
+        self.model.load(_weight_path(model_dir, 'llm'),
                         '{}/flow.pt'.format(model_dir),
                         '{}/hift.pt'.format(model_dir))
         if load_jit:
@@ -160,7 +167,7 @@ class CosyVoice2(CosyVoice):
             load_jit, load_trt, load_vllm, fp16 = False, False, False, False
             logging.warning('no cuda device, set load_jit/load_trt/load_vllm/fp16 to False')
         self.model = CosyVoice2Model(configs['llm'], configs['flow'], configs['hift'], fp16)
-        self.model.load('{}/llm.pt'.format(model_dir),
+        self.model.load(_weight_path(model_dir, 'llm'),
                         '{}/flow.pt'.format(model_dir),
                         '{}/hift.pt'.format(model_dir))
         if load_vllm:
@@ -210,7 +217,7 @@ class CosyVoice3(CosyVoice2):
             load_trt, fp16 = False, False
             logging.warning('no cuda device, set load_trt/fp16 to False')
         self.model = CosyVoice3Model(configs['llm'], configs['flow'], configs['hift'], fp16)
-        self.model.load('{}/llm.pt'.format(model_dir),
+        self.model.load(_weight_path(model_dir, 'llm'),
                         '{}/flow.pt'.format(model_dir),
                         '{}/hift.pt'.format(model_dir))
         if load_vllm:

@@ -54,6 +54,12 @@ if __name__ == "__main__":
     parser.add_argument("--dir", type=str)
     parser.add_argument("--onnx_path", type=str)
     parser.add_argument("--num_thread", type=int, default=8)
+    parser.add_argument(
+        "--provider",
+        choices=("auto", "cuda", "cpu"),
+        default="auto",
+        help="ONNX Runtime provider. auto prefers CUDA and falls back to CPU.",
+    )
     args = parser.parse_args()
 
     utt2wav = {}
@@ -65,7 +71,20 @@ if __name__ == "__main__":
     option = onnxruntime.SessionOptions()
     option.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
     option.intra_op_num_threads = 1
-    providers = ["CUDAExecutionProvider"]
+    available_providers = set(onnxruntime.get_available_providers())
+    if args.provider == "cuda":
+        if "CUDAExecutionProvider" not in available_providers:
+            raise RuntimeError("CUDAExecutionProvider is not available in this ONNX Runtime build.")
+        providers = ["CUDAExecutionProvider"]
+    elif args.provider == "cpu":
+        providers = ["CPUExecutionProvider"]
+    else:
+        providers = (
+            ["CUDAExecutionProvider", "CPUExecutionProvider"]
+            if "CUDAExecutionProvider" in available_providers
+            else ["CPUExecutionProvider"]
+        )
+    logging.info("speech-token ONNX providers: %s", providers)
     ort_session = onnxruntime.InferenceSession(args.onnx_path, sess_options=option, providers=providers)
     executor = ThreadPoolExecutor(max_workers=args.num_thread)
 

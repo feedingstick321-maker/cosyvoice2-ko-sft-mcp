@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.10"
+      - name: Install test dependencies
+        run: uv pip install --system --editable . pytest ruff
+      - name: Ruff
+        run: ruff check src tests scripts/convert_checkpoint.py scripts/validate_release.py scripts/smoke_inference.py
+      - name: Tests
+        run: pytest -q
+      - name: Release guard
+        run: python scripts/validate_release.py

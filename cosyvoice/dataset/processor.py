@@ -337,7 +337,7 @@ def static_batch(data, batch_size=16):
         yield buf
 
 
-def dynamic_batch(data, max_frames_in_batch=12000, mode='train'):
+def dynamic_batch(data, max_frames_in_batch=12000, max_batch_size=0, mode='train'):
     """ Dynamic batch the data until the total frames in batch
         reach `max_frames_in_batch`
 
@@ -356,7 +356,8 @@ def dynamic_batch(data, max_frames_in_batch=12000, mode='train'):
         new_sample_frames = sample['speech_feat'].size(0)
         longest_frames = max(longest_frames, new_sample_frames)
         frames_after_padding = longest_frames * (len(buf) + 1)
-        if frames_after_padding > max_frames_in_batch:
+        batch_size_limit_reached = max_batch_size > 0 and len(buf) >= max_batch_size
+        if frames_after_padding > max_frames_in_batch or batch_size_limit_reached:
             yield buf
             buf = [sample]
             longest_frames = new_sample_frames
@@ -366,13 +367,14 @@ def dynamic_batch(data, max_frames_in_batch=12000, mode='train'):
         yield buf
 
 
-def batch(data, batch_type='static', batch_size=16, max_frames_in_batch=12000, mode='train'):
+def batch(data, batch_type='static', batch_size=16, max_frames_in_batch=12000,
+          max_batch_size=0, mode='train'):
     """ Wrapper for static/dynamic batch
     """
     if batch_type == 'static':
         return static_batch(data, batch_size)
     elif batch_type == 'dynamic':
-        return dynamic_batch(data, max_frames_in_batch)
+        return dynamic_batch(data, max_frames_in_batch, max_batch_size, mode)
     else:
         logging.fatal('Unsupported batch type {}'.format(batch_type))
 

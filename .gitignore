@@ -2,6 +2,11 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.venv/
+.venv-dev/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
 
 # Visual Studio Code files
 .vscode
@@ -47,6 +52,9 @@ compile_commands.json
 *.aac
 *.pt
 pretrained_models/*
+local_models/
+outputs/
+voices/
 *_pb2_grpc.py
 *_pb2.py
 *.tar

@@ -22,15 +22,19 @@ import re
 import datetime
 import yaml
 
-import deepspeed
+try:
+    import deepspeed
+    from deepspeed.runtime.zero.stage_1_and_2 import estimate_zero2_model_states_mem_needs_all_live
+except ImportError:
+    deepspeed = None
+    estimate_zero2_model_states_mem_needs_all_live = None
+
 import torch.optim as optim
 import torch.distributed as dist
 
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 from torch.nn.utils import clip_grad_norm_
-
-from deepspeed.runtime.zero.stage_1_and_2 import estimate_zero2_model_states_mem_needs_all_live
 
 from cosyvoice.dataset.dataset import Dataset
 from cosyvoice.utils.scheduler import WarmupLR, NoamHoldAnnealing, ConstantLR
@@ -46,6 +50,8 @@ def init_distributed(args):
         torch.cuda.set_device(local_rank)
         dist.init_process_group(args.dist_backend)
     else:
+        if deepspeed is None:
+            raise RuntimeError('DeepSpeed is required when train_engine=deepspeed.')
         deepspeed.init_distributed(dist_backend=args.dist_backend)
     return world_size, local_rank, rank
 
@@ -60,12 +66,12 @@ def init_dataset_and_dataloader(args, configs, gan, dpo):
                                    batch_size=None,
                                    pin_memory=args.pin_memory,
                                    num_workers=args.num_workers,
-                                   prefetch_factor=args.prefetch)
+                                   prefetch_factor=args.prefetch if args.num_workers > 0 else None)
     cv_data_loader = DataLoader(cv_dataset,
                                 batch_size=None,
                                 pin_memory=args.pin_memory,
                                 num_workers=args.num_workers,
-                                prefetch_factor=args.prefetch)
+                                prefetch_factor=args.prefetch if args.num_workers > 0 else None)
     return train_dataset, cv_dataset, train_data_loader, cv_data_loader
 
 
@@ -97,8 +103,16 @@ def wrap_cuda_model(args, model):
     if args.train_engine == "torch_ddp":  # native pytorch ddp
         assert (torch.cuda.is_available())
         model.cuda()
-        model = torch.nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)
+        if world_size > 1:
+            model = torch.nn.parallel.DistributedDataParallel(
+                model,
+                find_unused_parameters=False,
+                broadcast_buffers=False,
+                static_graph=True,
+            )
     else:
+        if deepspeed is None or estimate_zero2_model_states_mem_needs_all_live is None:
+            raise RuntimeError('DeepSpeed is required when train_engine=deepspeed.')
         if int(os.environ.get('RANK', 0)) == 0:
             logging.info("Estimating model states memory needs (zero2)...")
             estimate_zero2_model_states_mem_needs_all_live(
@@ -199,7 +213,8 @@ def save_model(model, model_name, info_dict):
 
     if info_dict["train_engine"] == "torch_ddp":
         if rank == 0:
-            torch.save({**model.module.state_dict(), 'epoch': info_dict['epoch'], 'step': info_dict['step']}, save_model_path)
+            state_dict = model.module.state_dict() if hasattr(model, 'module') else model.state_dict()
+            torch.save({**state_dict, 'epoch': info_dict['epoch'], 'step': info_dict['step']}, save_model_path)
     else:
         with torch.no_grad():
             model.save_checkpoint(save_dir=model_dir,
@@ -285,6 +300,9 @@ def batch_backward(model, scaler, info_dict):
             scaled_loss.backward()
 
     info_dict['loss_dict']['loss'] = scaled_loss
+    for k, v in info_dict['loss_dict'].items():
+        if isinstance(v, torch.Tensor):
+            info_dict['loss_dict'][k] = v.detach().float().mean().cpu().item()
     return info_dict
 
 
