@@ -88,6 +88,9 @@ For Claude Desktop, use the same executable as a `stdio` MCP server in
 | Tool | Purpose |
 |---|---|
 | `model_status` | Check model cache, GPU, CUDA, VRAM, and revisions |
+| `usage_reporting_status` | Check optional usage-reporting consent and endpoint state |
+| `configure_usage_reporting` | Explicitly opt in/out and optionally supply a participant ID |
+| `report_feedback` | Submit an optional 1-5 quality score and short comment |
 | `prepare_model` | Download and verify the pinned base and Korean weights |
 | `register_voice` | Store a user-owned reference voice locally |
 | `list_voices` | List local voice profiles |
@@ -130,10 +133,19 @@ they register and for complying with applicable law when generating or distribut
 
 ## Security
 
-- No telemetry and no hosted inference endpoint.
+- No hosted inference endpoint. Synthesis remains local.
+- Optional usage reporting is disabled by default and requires explicit user consent.
+- Usage events never contain synthesis text, prompt text, audio, voice names, or file paths.
 - Reference audio stays in the local voice store.
 - Remote audio URLs are not accepted by MCP tools.
 - Output paths are confined to the configured local output directory by default.
 - Model files are pinned and verified with SHA-256.
+
+Operators can set `COSYVOICE_USAGE_ENDPOINT` to an HTTPS JSON collector before launching the MCP.
+Users can then opt in through `configure_usage_reporting`; an optional participant ID lets a lab or
+organization identify itself voluntarily. Aggregate adoption is also visible through Hugging Face
+downloads and GitHub traffic. A serverless collector and aggregate statistics endpoint are provided
+in [`deploy/usage-collector`](deploy/usage-collector). See [PRIVACY.md](PRIVACY.md) for the exact
+event fields.
 
 See [README_UPSTREAM.md](README_UPSTREAM.md) for the original CosyVoice documentation.

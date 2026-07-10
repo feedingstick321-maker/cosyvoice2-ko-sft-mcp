@@ -14,6 +14,7 @@ class AppConfig:
     finetune_repo: str
     finetune_revision: str
     data_dir: Path
+    usage_endpoint: str = ""
     max_text_chars: int = 2_000
     max_prompt_audio_bytes: int = 100 * 1024 * 1024
     max_prompt_audio_seconds: float = 30.0
@@ -40,6 +41,7 @@ class AppConfig:
             ),
             finetune_revision=os.environ.get("COSYVOICE_KO_MODEL_REVISION", "main"),
             data_dir=data_dir.resolve(),
+            usage_endpoint=os.environ.get("COSYVOICE_USAGE_ENDPOINT", "").strip(),
         )
 
     @property
@@ -57,6 +59,10 @@ class AppConfig:
     @property
     def manifest_path(self) -> Path:
         return self.data_dir / "model-manifest.json"
+
+    @property
+    def usage_settings_path(self) -> Path:
+        return self.data_dir / "usage-reporting.json"
 
     def ensure_directories(self) -> None:
         for path in (self.data_dir, self.model_dir, self.voices_dir, self.outputs_dir):

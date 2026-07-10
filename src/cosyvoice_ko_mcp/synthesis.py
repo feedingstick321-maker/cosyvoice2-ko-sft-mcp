@@ -11,6 +11,7 @@ import soundfile
 
 from .config import AppConfig
 from .model_manager import ModelManager
+from .usage_reporting import UsageReporter
 from .voice_store import VoiceStore
 
 
@@ -20,10 +21,12 @@ class SynthesisService:
         config: AppConfig,
         model_manager: ModelManager,
         voice_store: VoiceStore,
+        usage_reporter: UsageReporter | None = None,
     ) -> None:
         self.config = config
         self.model_manager = model_manager
         self.voice_store = voice_store
+        self.usage_reporter = usage_reporter
         self._synthesis_lock = Lock()
 
     def synthesize_registered(
@@ -58,32 +61,33 @@ class SynthesisService:
         if not 0 <= seed <= 2_147_483_647:
             raise ValueError("seed must be between 0 and 2147483647.")
 
-        with self._synthesis_lock:
-            self._seed_everything(seed)
-            model = self.model_manager.load()
-            output_path = self._new_output_path()
-            started = time.perf_counter()
-            output: Any | None = None
-            for model_output in model.inference_zero_shot(
-                normalized_text,
-                normalized_prompt,
-                str(prompt_path),
-                stream=False,
-                speed=speed,
-            ):
-                output = model_output["tts_speech"].detach().cpu()
-                break
-            if output is None or output.numel() == 0:
-                raise RuntimeError("The model returned no audio.")
+        started = time.perf_counter()
+        try:
+            with self._synthesis_lock:
+                self._seed_everything(seed)
+                model = self.model_manager.load()
+                output_path = self._new_output_path()
+                output: Any | None = None
+                for model_output in model.inference_zero_shot(
+                    normalized_text,
+                    normalized_prompt,
+                    str(prompt_path),
+                    stream=False,
+                    speed=speed,
+                ):
+                    output = model_output["tts_speech"].detach().cpu()
+                    break
+                if output is None or output.numel() == 0:
+                    raise RuntimeError("The model returned no audio.")
 
-            import torchaudio
+                import torchaudio
 
-            torchaudio.save(str(output_path), output, model.sample_rate)
-            audio_info = soundfile.info(str(output_path))
-            if audio_info.frames <= 0:
-                output_path.unlink(missing_ok=True)
-                raise RuntimeError("The generated audio file is empty.")
-            return {
+                torchaudio.save(str(output_path), output, model.sample_rate)
+                audio_info = soundfile.info(str(output_path))
+                if audio_info.frames <= 0:
+                    output_path.unlink(missing_ok=True)
+                    raise RuntimeError("The generated audio file is empty.")
+            result = {
                 "path": str(output_path.resolve()),
                 "uri": output_path.resolve().as_uri(),
                 "duration_sec": round(float(audio_info.duration), 3),
@@ -92,6 +96,24 @@ class SynthesisService:
                 "speed": speed,
                 "elapsed_sec": round(time.perf_counter() - started, 3),
             }
+            if self.usage_reporter:
+                self.usage_reporter.report_synthesis(
+                    success=True,
+                    elapsed_sec=time.perf_counter() - started,
+                    duration_sec=float(audio_info.duration),
+                    text_chars=len(normalized_text),
+                )
+            return result
+        except Exception as exc:
+            if self.usage_reporter:
+                self.usage_reporter.report_synthesis(
+                    success=False,
+                    elapsed_sec=time.perf_counter() - started,
+                    duration_sec=None,
+                    text_chars=len(normalized_text),
+                    error_type=type(exc).__name__,
+                )
+            raise
 
     def _validate_text(self, value: str, field_name: str) -> str:
         normalized = value.strip()

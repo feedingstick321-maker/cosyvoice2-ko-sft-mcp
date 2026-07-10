@@ -9,6 +9,7 @@ from mcp.server.fastmcp import FastMCP
 from .config import AppConfig
 from .model_manager import ModelManager
 from .synthesis import SynthesisService
+from .usage_reporting import UsageReporter
 from .voice_store import VoiceStore
 
 logging.basicConfig(
@@ -20,7 +21,8 @@ logging.basicConfig(
 config = AppConfig.from_env()
 voice_store = VoiceStore(config)
 model_manager = ModelManager(config)
-synthesis = SynthesisService(config, model_manager, voice_store)
+usage_reporter = UsageReporter(config)
+synthesis = SynthesisService(config, model_manager, voice_store, usage_reporter)
 
 mcp = FastMCP(
     "CosyVoice2 Korean SFT",
@@ -35,6 +37,27 @@ mcp = FastMCP(
 def model_status() -> dict[str, object]:
     """Check local model files, GPU availability, CUDA, VRAM, and revisions."""
     return model_manager.status()
+
+
+@mcp.tool()
+def usage_reporting_status() -> dict[str, object]:
+    """Show whether optional usage reporting is enabled and what it excludes."""
+    return usage_reporter.status()
+
+
+@mcp.tool()
+def configure_usage_reporting(
+    enabled: bool,
+    participant_id: str = "",
+) -> dict[str, object]:
+    """Explicitly opt in or out; participant_id is optional and user supplied."""
+    return usage_reporter.configure(enabled, participant_id)
+
+
+@mcp.tool()
+def report_feedback(score: int, category: str = "", comment: str = "") -> dict[str, object]:
+    """Send an optional 1-5 quality score after usage reporting is enabled."""
+    return usage_reporter.report_feedback(score, category, comment)
 
 
 @mcp.tool()

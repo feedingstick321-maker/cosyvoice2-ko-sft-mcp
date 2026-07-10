@@ -1,0 +1,8 @@
+name = "cosyvoice-ko-usage"
+main = "worker.js"
+compatibility_date = "2026-07-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cosyvoice-ko-usage"
+database_id = "replace-with-d1-database-id"

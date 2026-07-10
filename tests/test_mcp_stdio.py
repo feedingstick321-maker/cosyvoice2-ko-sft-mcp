@@ -28,6 +28,9 @@ def test_stdio_server_lists_tools_without_loading_model(tmp_path: Path) -> None:
     names = asyncio.run(list_tool_names(tmp_path / "mcp-data"))
     assert names == {
         "model_status",
+        "usage_reporting_status",
+        "configure_usage_reporting",
+        "report_feedback",
         "prepare_model",
         "register_voice",
         "list_voices",
