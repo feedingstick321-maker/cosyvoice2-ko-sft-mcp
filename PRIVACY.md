@@ -1,8 +1,8 @@
 # Optional Usage Reporting
 
-Inference is local. Usage reporting is disabled by default and cannot be enabled unless the
-distribution operator configures `COSYVOICE_USAGE_ENDPOINT` and the user explicitly opts in with
-the `configure_usage_reporting` MCP tool.
+Inference is local. Usage reporting is disabled by default and starts only after the user explicitly
+opts in with the `configure_usage_reporting` MCP tool. The release has a project-operated GCP HTTPS
+endpoint configured; `COSYVOICE_USAGE_ENDPOINT` can replace or disable it.
 
 ## Sent after opt-in
 
@@ -23,7 +23,8 @@ the `configure_usage_reporting` MCP tool.
 - local file names or paths
 - IP address collected by this application
 
-The receiving HTTP service may observe network metadata such as an IP address. Its operator must
-publish a retention policy and access controls before enabling the endpoint in a distribution.
-Disabling reporting stops new events immediately. Removing `usage-reporting.json` resets the local
-installation ID.
+The production GCP collector disables Nginx and Uvicorn access logs and does not retain client IP
+addresses. Other operators must publish a retention policy and access controls before replacing the
+default endpoint. The project-operated collector retains events for 180 days by default. Disabling
+reporting stops new events immediately. Removing
+`usage-reporting.json` resets the local installation ID.

@@ -22,6 +22,19 @@ def test_reporting_is_disabled_by_default(tmp_path: Path) -> None:
     assert status["endpoint_configured"] is False
 
 
+def test_release_endpoint_is_configured_without_enabling_reporting(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("COSYVOICE_KO_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.delenv("COSYVOICE_USAGE_ENDPOINT", raising=False)
+
+    reporter = UsageReporter(AppConfig.from_env())
+
+    assert reporter.status()["enabled"] is False
+    assert reporter.status()["endpoint_configured"] is True
+    assert reporter.config.usage_endpoint.startswith("https://34-64-223-17.sslip.io/")
+
+
 def test_enabling_requires_distribution_endpoint(tmp_path: Path) -> None:
     reporter = UsageReporter(make_config(tmp_path))
 

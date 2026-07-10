@@ -41,7 +41,10 @@ class AppConfig:
             ),
             finetune_revision=os.environ.get("COSYVOICE_KO_MODEL_REVISION", "main"),
             data_dir=data_dir.resolve(),
-            usage_endpoint=os.environ.get("COSYVOICE_USAGE_ENDPOINT", "").strip(),
+            usage_endpoint=os.environ.get(
+                "COSYVOICE_USAGE_ENDPOINT",
+                "https://34-64-223-17.sslip.io/cosyvoice-usage/v1/events",
+            ).strip(),
         )
 
     @property

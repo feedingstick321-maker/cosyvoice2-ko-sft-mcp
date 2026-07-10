@@ -51,4 +51,4 @@ jobs:
         run: |
           set -eux
           pip install ruff
-          ruff check src tests scripts/convert_checkpoint.py scripts/validate_release.py scripts/smoke_inference.py
+          ruff check src tests deploy/gcp-vm-collector/app.py scripts/convert_checkpoint.py scripts/validate_release.py scripts/smoke_inference.py

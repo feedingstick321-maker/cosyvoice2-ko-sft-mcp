@@ -16,7 +16,7 @@ jobs:
           submodules: recursive
       - uses: astral-sh/setup-uv@v6
       - name: Ruff
-        run: uv run --python 3.10 --with pytest --with ruff ruff check src tests scripts/convert_checkpoint.py scripts/validate_release.py scripts/smoke_inference.py
+        run: uv run --python 3.10 --with pytest --with ruff ruff check src tests deploy/gcp-vm-collector/app.py scripts/convert_checkpoint.py scripts/validate_release.py scripts/smoke_inference.py
       - name: Tests
         run: uv run --python 3.10 --with pytest pytest -q
       - name: Release guard

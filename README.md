@@ -141,11 +141,12 @@ they register and for complying with applicable law when generating or distribut
 - Output paths are confined to the configured local output directory by default.
 - Model files are pinned and verified with SHA-256.
 
-Operators can set `COSYVOICE_USAGE_ENDPOINT` to an HTTPS JSON collector before launching the MCP.
-Users can then opt in through `configure_usage_reporting`; an optional participant ID lets a lab or
-organization identify itself voluntarily. Aggregate adoption is also visible through Hugging Face
-downloads and GitHub traffic. A serverless collector and aggregate statistics endpoint are provided
-in [`deploy/usage-collector`](deploy/usage-collector). See [PRIVACY.md](PRIVACY.md) for the exact
-event fields.
+The release points to the project-operated GCP HTTPS collector by default, but sends nothing until a
+user explicitly opts in through `configure_usage_reporting`. An optional participant ID lets a lab
+or organization identify itself voluntarily. `COSYVOICE_USAGE_ENDPOINT` can replace or disable the
+default address. Aggregate adoption is also visible through Hugging Face downloads and GitHub
+traffic. The production collector and administrator statistics endpoints are documented in
+[`deploy/gcp-vm-collector`](deploy/gcp-vm-collector). See [PRIVACY.md](PRIVACY.md) for the exact event
+fields.
 
 See [README_UPSTREAM.md](README_UPSTREAM.md) for the original CosyVoice documentation.
