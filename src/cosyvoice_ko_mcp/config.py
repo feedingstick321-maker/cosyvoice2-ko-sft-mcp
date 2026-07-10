@@ -37,9 +37,12 @@ class AppConfig:
             ),
             finetune_repo=os.environ.get(
                 "COSYVOICE_KO_MODEL_REPO",
-                "feedingstick321-maker/CosyVoice2-KO-SFT-v6-epoch3",
+                "sonselfa/CosyVoice2-KO-SFT-v6-epoch3",
             ),
-            finetune_revision=os.environ.get("COSYVOICE_KO_MODEL_REVISION", "main"),
+            finetune_revision=os.environ.get(
+                "COSYVOICE_KO_MODEL_REVISION",
+                "f8d5c2f4732e5248467d2945208f7e5056305818",
+            ),
             data_dir=data_dir.resolve(),
             usage_endpoint=os.environ.get(
                 "COSYVOICE_USAGE_ENDPOINT",

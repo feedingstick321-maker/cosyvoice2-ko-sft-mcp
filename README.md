@@ -37,11 +37,13 @@ and Blackwell GPUs are covered.
 ## Release Layout
 
 - Source and MCP: this GitHub repository
-- Fine-tuned LLM weights: `feedingstick321-maker/CosyVoice2-KO-SFT-v6-epoch3`
+- Fine-tuned LLM weights: [`sonselfa/CosyVoice2-KO-SFT-v6-epoch3`](https://huggingface.co/sonselfa/CosyVoice2-KO-SFT-v6-epoch3)
 - Base components: `FunAudioLLM/CosyVoice2-0.5B`
 - Selected checkpoint: SFT v6 Epoch 3
 
 The installer downloads the pinned base model and overlays only the Korean fine-tuned LLM.
+The Korean weights are pinned to Hugging Face commit
+`f8d5c2f4732e5248467d2945208f7e5056305818` and verified by SHA-256.
 The AI Hub training corpus, derived parquet files, embeddings, tokens, and production audio are
 not distributed.
 
